@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>反應力測驗</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100dvh;display:flex;justify-content:center;align-items:center;touch-action:manipulation}
+.container{width:100%;max-width:480px;min-height:100dvh;padding:16px;display:flex;flex-direction:column}
+.card{background:rgba(255,255,255,.95);border-radius:24px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.15);flex:1;display:flex;flex-direction:column}
+
+/* HOME */
+.home{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;flex:1}
+.homeTitle{font-size:20px;color:#667eea;font-weight:700;letter-spacing:2px}
+.homeTitle span{display:inline-block;animation:bounce 1.5s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.modeGrid{display:flex;flex-direction:column;gap:20px;width:100%}
+.modeBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px 20px;border-radius:20px;border:3px solid transparent;cursor:pointer;transition:.25s;position:relative;overflow:hidden}
+.modeBtn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.2));pointer-events:none}
+.modeBtn:active{transform:scale(.96)}
+.modeBtn .icon{font-size:52px;line-height:1}
+.modeBtn .label{font-size:15px;font-weight:600;letter-spacing:1px}
+.mBtn-shape{background:linear-gradient(135deg,#43e97b,#38f9d7);border-color:#2dd4a8;color:#1a6b4a}
+.mBtn-shape .label{color:#1a6b4a}
+.mBtn-spatial{background:linear-gradient(135deg,#fa709a,#fee140);border-color:#f0a030;color:#8b4513}
+.mBtn-spatial .label{color:#8b4513}
+.mBtn-number{background:linear-gradient(135deg,#a18cd1,#fbc2eb);border-color:#b07cd0;color:#5b3a7a}
+.mBtn-number .label{color:#5b3a7a}
+
+/* QUESTION */
+.questionArea{display:none;flex-direction:column;flex:1}
+.qHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #eee}
+.qBack{width:44px;height:44px;border-radius:50%;border:2px solid #ddd;background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.qBack:active{background:#f0f0f0;transform:scale(.92)}
+.qProgress{font-size:15px;font-weight:600;color:#999}
+.qTimer{font-size:20px;font-weight:700;color:#333;font-variant-numeric:tabular-nums}
+.qBody{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;padding:8px 0}
+.qPrompt{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px;min-height:80px}
+.qPrompt .sq{width:52px;height:52px;border-radius:12px;background:#f5f5ff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.qPrompt .sq.empty{background:linear-gradient(135deg,#e8e8ff,#d0d0ff);border:2px dashed #a0a0d0;color:#666}
+.qPrompt .sq.wide{width:auto;padding:0 8px}
+.qPrompt .arrow{font-size:22px;color:#aaa}
+.qOptions{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:320px;margin-top:4px}
+.qOpt{aspect-ratio:1;border-radius:16px;border:3px solid #e0e0e0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.qOpt:active{transform:scale(.93)}
+.qOpt.correct{border-color:#43e97b;background:#e8fce8;box-shadow:0 0 0 4px rgba(67,233,123,.2)}
+.qOpt.wrong{border-color:#ff6b6b;background:#ffe8e8;box-shadow:0 0 0 4px rgba(255,107,107,.2)}
+.qOpt.reveal{border-color:#43e97b;background:#e8fce8}
+
+/* SHAPE specific */
+.qPrompt.shapeMode .sq{font-size:36px;width:60px;height:60px}
+
+/* SPATIAL specific */
+.spatialGrid{display:grid;gap:3px;background:#333;border:3px solid #333;border-radius:6px;margin:0 auto}
+.spatialGrid .cell{width:28px;height:28px;border-radius:2px}
+.spatialOptions{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:320px}
+.spatialOpt{display:flex;align-items:center;justify-content:center;padding:12px;border-radius:16px;border:3px solid #e0e0e0;background:#fff;cursor:pointer;transition:.2s}
+.spatialOpt:active{transform:scale(.93)}
+.spatialOpt.correct{border-color:#43e97b;background:#e8fce8;box-shadow:0 0 0 4px rgba(67,233,123,.2)}
+.spatialOpt.wrong{border-color:#ff6b6b;background:#ffe8e8;box-shadow:0 0 0 4px rgba(255,107,107,.2)}
+.spatialOpt .sOptGrid{display:grid;gap:2px;background:#555;border:2px solid #555;border-radius:4px}
+.spatialOpt .sOptGrid .cell{width:20px;height:20px;border-radius:2px}
+.spatialTarget{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:4px}
+.spatialTargetLabel{font-size:14px;color:#999;font-weight:600}
+.spatialTarget .tGrid{display:grid;gap:3px;background:#444;border:3px solid #444;border-radius:6px}
+.spatialTarget .tGrid .cell{width:32px;height:32px;border-radius:3px}
+
+/* NUMBER specific */
+.qPrompt.numberMode .sq{font-size:32px;width:56px}
+
+/* RESULT */
+.resultArea{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px}
+.resultIcon{font-size:72px;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.resultScore{font-size:64px;font-weight:800;color:#667eea;line-height:1}
+.resultDetail{display:flex;gap:32px;padding:16px 0}
+.resultDetailItem{display:flex;flex-direction:column;align-items:center;gap:4px}
+.resultDetailItem .num{font-size:32px;font-weight:700;color:#333}
+.resultDetailItem .lbl{font-size:13px;color:#999;font-weight:600}
+.resultStars{font-size:36px;letter-spacing:4px}
+.resultBtn{width:60px;height:60px;border-radius:50%;border:3px solid #667eea;background:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;margin-top:8px}
+.resultBtn:active{transform:scale(.9);background:#f0f0ff}
+
+/* ABSOLUTE POSITION TIMER */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.timerUrgent{animation:pulse .5s infinite;color:#ff4444!important}
+
+/* Responsive */
+@media(max-width:400px){
+  .qPrompt .sq{width:42px;height:42px;font-size:22px}
+  .qPrompt.shapeMode .sq{width:48px;height:48px;font-size:28px}
+  .qOpt{font-size:26px}
+  .modeBtn .icon{font-size:40px}
+}
+
+/* shape-only styles */
+.shapePattern{display:flex;align-items:center;gap:8px}
+.shapePattern .spItem{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;background:#f5f5ff;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.shapePattern .spItem.missing{background:linear-gradient(135deg,#e8e8ff,#d0d0ff);border:2px dashed #a0a0d0;color:#999}
+.shapePattern .spArrow{font-size:20px;color:#bbb;margin:0 2px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card" id="app">
+
+  <!-- HOME -->
+  <div class="home" id="homeScreen">
+    <div class="homeTitle"><span>⚡</span> <span>✦</span> <span>⚡</span></div>
+    <div class="modeGrid">
+      <div class="modeBtn mBtn-shape" onclick="startMode('shape')">
+        <div class="icon">◈</div>
+        <div class="label">◐ ◑ ◆ ◇</div>
+      </div>
+      <div class="modeBtn mBtn-spatial" onclick="startMode('spatial')">
+        <div class="icon">◇</div>
+        <div class="label">⬡ ⬢ ⬟</div>
+      </div>
+      <div class="modeBtn mBtn-number" onclick="startMode('number')">
+        <div class="icon">#</div>
+        <div class="label">1 2 3 4</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="questionArea" id="questionArea">
+    <div class="qHeader">
+      <button class="qBack" onclick="goHome()">✕</button>
+      <div class="qProgress" id="qProgress">✦✦✦</div>
+      <div class="qTimer" id="qTimer">0</div>
+    </div>
+    <div class="qBody" id="qBody"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="resultArea" id="resultArea">
+    <div class="resultIcon" id="resultIcon">🏆</div>
+    <div class="resultScore" id="resultScore">10</div>
+    <div class="resultDetail">
+      <div class="resultDetailItem"><div class="num" id="rCorrect">0</div><div class="lbl">✦</div></div>
+      <div class="resultDetailItem"><div class="num" id="rWrong">0</div><div class="lbl">◇</div></div>
+      <div class="resultDetailItem"><div class="num" id="rTime">0s</div><div class="lbl">⌛</div></div>
+    </div>
+    <div class="resultStars" id="resultStars">★★★★★</div>
+    <button class="resultBtn" onclick="goHome()">🏠</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ======== QUESTION BANKS ========
+
+const shapeQuestions = [
+  {pattern:['◐','◑','◐','◑','◐'], missing:-1, options:['◐','◑','◒','◓'], answer:0},
+  {pattern:['◆','◇','◆','◇','◆'], missing:-1, options:['◆','◇','⬢','⬡'], answer:1},
+  {pattern:['●','○','●','○','●'], missing:-1, options:['●','◉','○','◎'], answer:2},
+  {pattern:['■','□','■','□','■'], missing:-1, options:['■','□','▣','▢'], answer:1},
+  {pattern:['▲','△','▲','△','▲'], missing:-1, options:['▲','△','▴','▾'], answer:1},
+  {pattern:['★','☆','★','☆','★'], missing:-1, options:['★','☆','✩','✪'], answer:1},
+  {pattern:['♥','♡','♥','♡','♥'], missing:-1, options:['♥','♡','❤','💔'], answer:1},
+  {pattern:['⬟','⬡','⬟','⬡','⬟'], missing:-1, options:['⬟','⬡','⬢','⬠'], answer:1},
+  {pattern:['⊡','⊟','⊡','⊟','⊡'], missing:-1, options:['⊡','⊟','⊞','⊠'], answer:1},
+  {pattern:['▣','□','▣','□','▣'], missing:-1, options:['▣','□','■','▢'], answer:1},
+  {pattern:['◈','◇','◈','◇','◈'], missing:-1, options:['◈','◇','⬥','⬩'], answer:1},
+  {pattern:['●','◐','○','◑','●'], missing:-1, options:['●','◐','◑','○'], answer:0},
+  {pattern:['⬛','⬜','⬛','⬜','⬛'], missing:-1, options:['⬛','⬜','🔲','🔳'], answer:1},
+  {pattern:['🔴','🟠','🟡','🟢','🔵'], missing:-1, options:['🔴','🟣','🟠','🟡'], answer:1},
+  {pattern:['⬆','➡','⬇','⬅','⬆'], missing:-1, options:['⬆','➡','⬇','⬅'], answer:1},
+];
+
+const numberQuestions = [
+  {seq:[2,4,6,8], missing:3, options:[9,10,11,12], answer:1},
+  {seq:[1,3,5,7], missing:3, options:[8,9,10,11], answer:1},
+  {seq:[5,10,15,20], missing:3, options:[22,23,24,25], answer:3},
+  {seq:[10,8,6,4], missing:3, options:[0,1,2,3], answer:2},
+  {seq:[1,4,9,16], missing:3, options:[18,20,23,25], answer:3},
+  {seq:[3,6,9,12], missing:3, options:[13,14,15,16], answer:2},
+  {seq:[50,40,30,20], missing:3, options:[0,5,10,15], answer:2},
+  {seq:[1,2,4,8], missing:3, options:[10,12,14,16], answer:3},
+  {seq:[30,25,20,15], missing:3, options:[5,8,10,12], answer:2},
+  {seq:[1,10,100,1000], missing:3, options:[5000,10000,50000,100000], answer:1},
+  {seq:[2,5,8,11], missing:3, options:[12,13,14,15], answer:2},
+  {seq:[100,90,80,70], missing:3, options:[50,55,60,65], answer:2},
+  {seq:[1,1,2,3,5], missing:4, options:[6,7,8,9], answer:2},
+  {seq:[9,7,5,3], missing:3, options:[-1,0,1,2], answer:2},
+  {seq:[4,8,12,16], missing:3, options:[18,19,20,22], answer:2},
+];
+
+// Spatial: each defines a target grid and 4 option grids
+const spatialQuestions = [
+  {
+    target:[[1,0],[1,1]],
+    opts:[
+      [[1,0],[1,1]],
+      [[0,1],[1,1]],
+      [[1,1],[0,1]],
+      [[1,1],[1,0]],
+    ]
+  },
+  {
+    target:[[1,1,1],[0,0,1]],
+    opts:[
+      [[1,0,0],[1,1,1]],
+      [[1,1,1],[1,0,0]],
+      [[0,0,1],[1,1,1]],
+      [[1,1,0],[0,0,1]],
+    ]
+  },
+  {
+    target:[[1,0],[1,0],[1,1]],
+    opts:[
+      [[1,1],[0,1],[0,1]],
+      [[0,1],[0,1],[1,1]],
+      [[1,0],[1,0],[1,1]],
+      [[1,1],[1,0],[1,0]],
+    ]
+  },
+  {
+    target:[[1,1,0],[0,1,1]],
+    opts:[
+      [[0,1,1],[1,1,0]],
+      [[1,0,1],[1,1,0]],
+      [[0,1,1],[0,1,1]],
+      [[1,1,0],[0,1,1]],
+    ]
+  },
+  {
+    target:[[1,0,0],[1,1,1]],
+    opts:[
+      [[1,1,1],[0,0,1]],
+      [[1,1,1],[1,0,0]],
+      [[0,0,1],[1,1,1]],
+      [[0,1,1],[1,1,0]],
+    ]
+  },
+  {
+    target:[[1,1],[1,0]],
+    opts:[
+      [[1,0],[1,1]],
+      [[1,1],[0,1]],
+      [[1,1],[1,0]],
+      [[0,1],[1,1]],
+    ]
+  },
+  {
+    target:[[0,1,1],[1,1,0]],
+    opts:[
+      [[1,1,0],[0,1,1]],
+      [[1,0,1],[1,1,0]],
+      [[1,1,0],[1,0,1]],
+      [[0,1,1],[1,1,0]],
+    ]
+  },
+  {
+    target:[[1,1,1],[0,1,0]],
+    opts:[
+      [[0,1,0],[1,1,1]],
+      [[1,1,1],[0,1,0]],
+      [[1,0,1],[1,1,0]],
+      [[1,1,1],[1,0,1]],
+    ]
+  },
+  {
+    target:[[1,0],[1,0],[1,0],[1,1]],
+    opts:[
+      [[1,1],[1,0],[1,0],[1,0]],
+      [[1,0],[1,1],[1,0],[1,0]],
+      [[0,1],[0,1],[0,1],[1,1]],
+      [[1,0],[1,0],[1,0],[1,1]],
+    ]
+  },
+  {
+    target:[[1,1,1],[1,0,0]],
+    opts:[
+      [[1,0,0],[1,1,1]],
+      [[1,1,1],[0,0,1]],
+      [[0,0,1],[1,1,1]],
+      [[1,1,0],[0,1,1]],
+    ]
+  },
+];
+
+// ======== GAME STATE ========
+let currentMode = '';
+let currentQ = 0;
+let questions = [];
+let correct = 0;
+let wrong = 0;
+let timer = 0;
+let timerInterval = null;
+let answered = false;
+
+// ======== UTILITY ========
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a;
+}
+
+// ======== SCREENS ========
+function showScreen(s){
+  ['homeScreen','questionArea','resultArea'].forEach(id=>{
+    document.getElementById(id).style.display=id===s?'flex':'none';
+  });
+}
+
+function goHome(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null}
+  showScreen('homeScreen');
+}
+
+// ======== START MODE ========
+function startMode(mode){
+  currentMode=mode;
+  currentQ=0;
+  correct=0;
+  wrong=0;
+  timer=0;
+  answered=false;
+
+  if(mode==='shape') questions=shuffle([...shapeQuestions]);
+  else if(mode==='number') questions=shuffle([...numberQuestions]);
+  else questions=shuffle([...spatialQuestions]);
+
+  showScreen('questionArea');
+  renderQuestion();
+  if(timerInterval){clearInterval(timerInterval)}
+  timerInterval=setInterval(()=>{
+    timer++;
+    document.getElementById('qTimer').textContent=timer;
+    if(timer>15) document.getElementById('qTimer').classList.add('timerUrgent');
+  },1000);
+}
+
+// ======== RENDER QUESTION ========
+function renderQuestion(){
+  answered=false;
+  document.getElementById('qTimer').classList.remove('timerUrgent');
+  const q=questions[currentQ];
+  const total=questions.length;
+  const pct=Math.round((currentQ/total)*100);
+  const bar='✦'.repeat(Math.max(0,Math.min(5,Math.ceil((currentQ+1)/2))))+'◇'.repeat(Math.max(0,5-Math.ceil((currentQ+1)/2)));
+  document.getElementById('qProgress').textContent=bar;
+  document.getElementById('qTimer').textContent=timer;
+
+  const body=document.getElementById('qBody');
+  body.innerHTML='';
+
+  if(currentMode==='shape'){
+    renderShapeQ(body,q);
+  }else if(currentMode==='spatial'){
+    renderSpatialQ(body,q);
+  }else{
+    renderNumberQ(body,q);
+  }
+}
+
+// ======== SHAPE ========
+function renderShapeQ(body,q){
+  const prompt=document.createElement('div');
+  prompt.className='qPrompt shapeMode';
+
+  const wrapper=document.createElement('div');
+  wrapper.className='shapePattern';
+
+  q.pattern.forEach((item,i)=>{
+    const span=document.createElement('div');
+    span.className='spItem'+(i===q.missing?' missing':'');
+    span.textContent=item;
+    wrapper.appendChild(span);
+    if(i<q.pattern.length-1){
+      const arr=document.createElement('span');
+      arr.className='spArrow';
+      arr.textContent='→';
+      wrapper.appendChild(arr);
+    }
+  });
+
+  prompt.appendChild(wrapper);
+  body.appendChild(prompt);
+
+  const optGrid=document.createElement('div');
+  optGrid.className='qOptions';
+
+  // Rotate options so answer isn't always first
+  const opts=[...q.options];
+  const ansIdx=opts.indexOf(q.options[q.answer]);
+  const ansVal=opts[ansIdx];
+
+  q.options.forEach((val,i)=>{
+    const btn=document.createElement('div');
+    btn.className='qOpt';
+    btn.textContent=val;
+    btn.dataset.answer=val===q.options[q.answer]?'1':'0';
+    btn.onclick=()=>handleAnswer(btn,i===q.answer);
+    optGrid.appendChild(btn);
+  });
+
+  body.appendChild(optGrid);
+}
+
+// ======== NUMBER ========
+function renderNumberQ(body,q){
+  const prompt=document.createElement('div');
+  prompt.className='qPrompt numberMode';
+
+  q.seq.forEach((num,i)=>{
+    const sq=document.createElement('div');
+    sq.className='sq'+(i===q.missing?' empty':'');
+    sq.textContent=i===q.missing?'?':num;
+    prompt.appendChild(sq);
+    if(i<q.seq.length-1){
+      const arr=document.createElement('span');
+      arr.className='arrow';
+      arr.textContent='→';
+      arr.style.color='#ccc';
+      prompt.appendChild(arr);
+    }
+  });
+
+  body.appendChild(prompt);
+
+  const optGrid=document.createElement('div');
+  optGrid.className='qOptions';
+
+  q.options.forEach((val,i)=>{
+    const btn=document.createElement('div');
+    btn.className='qOpt';
+    btn.textContent=val;
+    btn.dataset.answer=i===q.answer?'1':'0';
+    btn.onclick=()=>handleAnswer(btn,i===q.answer);
+    optGrid.appendChild(btn);
+  });
+
+  body.appendChild(optGrid);
+}
+
+// ======== SPATIAL ========
+function renderSpatialQ(body,q){
+  const container=document.createElement('div');
+  container.style.cssText='display:flex;flex-direction:column;align-items:center;gap:16px;width:100%';
+
+  // Target label
+  const tLabel=document.createElement('div');
+  tLabel.style.cssText='font-size:13px;color:#999;font-weight:600;margin-bottom:2px';
+  tLabel.textContent='⬟ ⬢';
+  container.appendChild(tLabel);
+
+  // Target grid
+  const targetDiv=document.createElement('div');
+  targetDiv.className='spatialTarget';
+  const tGrid=document.createElement('div');
+  tGrid.className='tGrid';
+  tGrid.style.gridTemplateColumns='repeat('+q.target[0].length+',1fr)';
+
+  const colors=['#eee','#667eea','#fa709a','#43e97b','#a18cd1','#fee140','#ff6b6b','#38f9d7'];
+  const colorIdx=Math.floor(Math.random()*colors.length);
+
+  q.target.forEach(row=>{
+    row.forEach(cell=>{
+      const c=document.createElement('div');
+      c.className='cell';
+      c.style.background=cell?colors[colorIdx]:'#f0f0f0';
+      tGrid.appendChild(c);
+    });
+  });
+  targetDiv.appendChild(tGrid);
+  container.appendChild(targetDiv);
+
+  // Arrow
+  const arr=document.createElement('div');
+  arr.style.cssText='font-size:18px;color:#ccc;margin:2px 0';
+  arr.textContent='▼';
+  container.appendChild(arr);
+
+  // Options
+  const optGrid=document.createElement('div');
+  optGrid.className='spatialOptions';
+
+  q.opts.forEach((opt,i)=>{
+    const btn=document.createElement('div');
+    btn.className='spatialOpt';
+    const g=document.createElement('div');
+    g.className='sOptGrid';
+    g.style.gridTemplateColumns='repeat('+opt[0].length+',1fr)';
+
+    opt.forEach(row=>{
+      row.forEach(cell=>{
+        const c=document.createElement('div');
+        c.className='cell';
+        c.style.background=cell?colors[colorIdx]:'#f0f0f0';
+        g.appendChild(c);
+      });
+    });
+
+    btn.appendChild(g);
+    btn.onclick=()=>handleAnswer(btn,i===0);
+    optGrid.appendChild(btn);
+  });
+
+  container.appendChild(optGrid);
+  body.appendChild(container);
+}
+
+// ======== HANDLE ANSWER ========
+function handleAnswer(el,isCorrect){
+  if(answered) return;
+  answered=true;
+
+  if(isCorrect){correct++;el.classList.add('correct')}
+  else{wrong++;el.classList.add('wrong')}
+
+  // Reveal correct option
+  const parent=el.parentElement;
+  if(!isCorrect && parent){
+    const children=parent.children;
+    for(let i=0;i<children.length;i++){
+      if(children[i].dataset&&children[i].dataset.answer==='1'){
+        children[i].classList.add('reveal');
+        break;
+      }
+    }
+  }
+
+  setTimeout(()=>{
+    currentQ++;
+    if(currentQ>=questions.length){
+      showResult();
+    }else{
+      renderQuestion();
+    }
+  },600);
+}
+
+// ======== RESULT ========
+function showResult(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null}
+  showScreen('resultArea');
+
+  const total=correct+wrong;
+  const pct=total>0?Math.round((correct/total)*100):0;
+
+  let icon='🏆';
+  if(pct<40) icon='💪';
+  else if(pct<70) icon='👍';
+  else if(pct<90) icon='🌟';
+  document.getElementById('resultIcon').textContent=icon;
+
+  document.getElementById('resultScore').textContent=correct+'/'+total;
+  document.getElementById('rCorrect').textContent=correct;
+  document.getElementById('rWrong').textContent=wrong;
+  document.getElementById('rTime').textContent=timer;
+
+  const stars=Math.max(1,Math.round(pct/20));
+  document.getElementById('resultStars').textContent='★'.repeat(stars)+'☆'.repeat(5-stars);
+}
+
+// ======== INIT ========
+showScreen('homeScreen');
+</script>
+</body>
+</html>
